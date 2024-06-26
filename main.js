@@ -156,7 +156,7 @@ async function claimAirdrop() {
         const wallets = fs.readFileSync('./data/wallets.txt', 'utf8').split('\n');
         const proxys = fs.readFileSync('./data/proxys.txt', 'utf8').split('\n');
 
-        logger.info(`Found ${wallets.length} wallets.`);
+        logger.info(`Blast Airdrop Claimer by https://t.me/cookiejunkieeth | Claiming ${wallets.length} accounts...`);
 
         for(let i = 0; i < wallets.length; i++) {
             const wallet = new ethers.Wallet(wallets[i]);
