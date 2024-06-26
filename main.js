@@ -156,8 +156,9 @@ async function claimAirdrop() {
         const wallets = fs.readFileSync('./data/wallets.txt', 'utf8').split('\n');
         const proxys = fs.readFileSync('./data/proxys.txt', 'utf8').split('\n');
 
+        logger.info(`Found ${wallets.length} wallets.`);
+
         for(let i = 0; i < wallets.length; i++) {
-            await sleep(5000 * i)
             const wallet = new ethers.Wallet(wallets[i]);
 
             const proxy = proxys.length == wallets.length ? proxys[i] : proxys[getRandomInt(0, proxys.length)];
