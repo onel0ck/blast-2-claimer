@@ -152,7 +152,6 @@ async function claimDrop(reqBody, wallet) {
 }
 
 async function claimAirdrop() {
-    try {
         const wallets = fs.readFileSync('./data/wallets.txt', 'utf8').split(/\r?\n/);
         const proxys = fs.readFileSync('./data/proxys.txt', 'utf8').split(/\r?\n/);
 
@@ -177,7 +176,6 @@ async function claimAirdrop() {
         }
 
         logger.success(`Claimed ${wallets.length} accounts.`);
-    } catch(e) {return {success: false, err: e}}
 }
 
 claimAirdrop();
