@@ -153,8 +153,8 @@ async function claimDrop(reqBody, wallet) {
 
 async function claimAirdrop() {
     try {
-        const wallets = fs.readFileSync('./data/wallets.txt', 'utf8').split('\n');
-        const proxys = fs.readFileSync('./data/proxys.txt', 'utf8').split('\n');
+        const wallets = fs.readFileSync('./data/wallets.txt', 'utf8').split(/\r?\n/);
+        const proxys = fs.readFileSync('./data/proxys.txt', 'utf8').split(/\r?\n/);
 
         logger.info(`Blast Airdrop Claimer by https://t.me/cookiejunkieeth | Claiming ${wallets.length} accounts...`);
 
@@ -171,7 +171,7 @@ async function claimAirdrop() {
             reqBody.defaults.headers["Referer"] = "https://airdrop.blast.io";
     
             const response = await claimDrop(reqBody, wallet);
-            if(!response.success) { logger.error(`[${i+1}/${wallets.length}] | ${wallet.address} | ${response.err}`); return; }
+            if(!response.success) { logger.error(`[${i+1}/${wallets.length}] | ${wallet.address} | ${response.err}`); continue; }
             
             logger.success(`[${i+1}/${wallets.length}] | ${wallet.address} | Successfully claimed tokens!`);
         }
