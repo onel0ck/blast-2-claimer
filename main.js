@@ -5,6 +5,7 @@ const { getRandomInt, generateReqBody, sleep } = require('./modules/utils.js');
 const { generateSignature } = require('./modules/signature.js');
 
 const provider = new ethers.providers.JsonRpcProvider("https://rpc.blast.io");
+let proxys = [];
 
 async function loginBlast(reqBody, wallet) {
     try {
@@ -51,6 +52,9 @@ async function claimDrop(reqBody, wallet, retryCount = 0, maxRetries = 3) {
                 logger.info(`[Retry ${retryCount + 1}/${maxRetries}] Changing proxy for ${wallet.address}`);
                 const proxy = proxys[getRandomInt(0, proxys.length)];
                 reqBody = generateReqBody(proxy);
+                reqBody.defaults.headers["authority"] = "waitlist-api.prod.blast.io";
+                reqBody.defaults.headers["Origin"] = "https://blast.io"
+                reqBody.defaults.headers["Referer"] = "https://blast.io/";
                 await sleep(1000);
                 return claimDrop(reqBody, wallet, retryCount + 1, maxRetries);
             }
@@ -117,7 +121,7 @@ function isProxyError(error) {
 
 async function claimAirdrop() {
     const wallets = fs.readFileSync('./data/wallets.txt', 'utf8').split(/\r?\n/);
-    const proxys = fs.readFileSync('./data/proxys.txt', 'utf8').split(/\r?\n/);
+    proxys = fs.readFileSync('./data/proxys.txt', 'utf8').split(/\r?\n/);
 
     logger.info(`Blast Season 2 Airdrop Claimer | Claiming ${wallets.length} accounts...`);
 
