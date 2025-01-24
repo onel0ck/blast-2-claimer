@@ -4,7 +4,7 @@ const { logger } = require('./modules/logger.js')
 const { getRandomInt, generateReqBody, sleep } = require('./modules/utils.js');
 const { generateSignature } = require('./modules/signature.js');
 
-const provider = new ethers.providers.JsonRpcProvider("https://rpc.blast.io");
+const provider = new ethers.providers.JsonRpcProvider("https://blastl2-mainnet.public.blastapi.io");
 
 async function loginBlast(reqBody, wallet) {
     try {
@@ -43,10 +43,19 @@ async function associateToken(reqBody, extensionSigner, accessToken) {
     } catch(e) {return {success: false, err: e}}
 }
 
-async function claimDrop(reqBody, wallet) {
+async function claimDrop(reqBody, wallet, retryCount = 0, maxRetries = 3) {
     try {
         const accessToken = await loginBlast(reqBody, wallet);
-        if(!accessToken.success) return {success: false, err: accessToken.err};
+        if(!accessToken.success) {
+            if(isProxyError(accessToken.err) && retryCount < maxRetries) {
+                logger.info(`[Retry ${retryCount + 1}/${maxRetries}] Changing proxy for ${wallet.address}`);
+                const proxy = proxys[getRandomInt(0, proxys.length)];
+                reqBody = generateReqBody(proxy);
+                await sleep(1000);
+                return claimDrop(reqBody, wallet, retryCount + 1, maxRetries);
+            }
+            return {success: false, err: accessToken.err};
+        }
 
         reqBody.defaults.headers['Cookie'] = 'accessToken=' + accessToken.accessToken;
         
@@ -71,13 +80,12 @@ async function claimDrop(reqBody, wallet) {
         const transactionRequest = {
             to: claimTx.data.tx.to,
             data: claimTx.data.tx.data,
-            gasLimit: 99039,
+            gasLimit: 120000,
             maxFeePerGas: ethers.utils.parseUnits("0.015255237", "gwei"),
             maxPriorityFeePerGas: ethers.utils.parseUnits("0.000000001", "gwei"),
             type: 2
         };
 
-        // Проверка баланса
         const maxCost = transactionRequest.maxFeePerGas.mul(transactionRequest.gasLimit);
         if(balance.lt(maxCost)) {
             return {success: false, err: `Insufficient ETH. Has: ${ethers.utils.formatEther(balance)}, Required: ${ethers.utils.formatEther(maxCost)}`};
@@ -88,15 +96,23 @@ async function claimDrop(reqBody, wallet) {
 
         return {success: true, hash: receipt.transactionHash};
     } catch(e) {
-        // Если транзакция с низким газом
-        if(e.code === 'REPLACEMENT_UNDERPRICED' && transactionRequest) {
-            logger.warn(`Retrying with higher gas for ${wallet.address}`);
+        if(e.code === 'CALL_EXCEPTION' || e.code === 'REPLACEMENT_UNDERPRICED') {
+            logger.warn(`Retrying after delay for ${wallet.address}`);
+            await sleep(3000);
             transactionRequest.maxFeePerGas = transactionRequest.maxFeePerGas.mul(2);
-            // Рекурсивный вызов с новыми параметрами
             return claimDrop(reqBody, wallet);
         }
         return {success: false, err: e}
     }
+}
+
+function isProxyError(error) {
+    if (!error) return false;
+    const errorString = error.toString().toLowerCase();
+    return errorString.includes('proxy') || 
+           errorString.includes('403') ||
+           errorString.includes('connection') || 
+           errorString.includes('unreachable');
 }
 
 async function claimAirdrop() {
