@@ -4,7 +4,7 @@ const { logger } = require('./modules/logger.js')
 const { getRandomInt, generateReqBody, sleep } = require('./modules/utils.js');
 const { generateSignature } = require('./modules/signature.js');
 
-const provider = new ethers.providers.JsonRpcProvider("https://blastl2-mainnet.public.blastapi.io");
+const provider = new ethers.providers.JsonRpcProvider("https://rpc.blast.io");
 
 async function loginBlast(reqBody, wallet) {
     try {
